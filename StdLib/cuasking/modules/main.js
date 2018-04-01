@@ -1,5 +1,5 @@
 var calculateBest = require ("../modules/calculateBest.js");
-var getCategory = require ("../modules/getCategory.js");
+var getCategory = require ("../modules/getCategory.js").get;
 
 var Sql = require ("./Sql.js").Sql;
 
@@ -15,7 +15,7 @@ class Main {
   static init () {
     this._sql;
   }
-  
+
   static get _sql () {
     if (this._sqlObj) return this._sqlObj;
     this._sqlObj = new Sql (host, user, password);
@@ -43,6 +43,7 @@ class Main {
       }, reject);
     });
   }
+  
   static myQuestions (userId) {
     return this._sql.getQuestionsByUserId (userId);
   }
@@ -55,10 +56,23 @@ class Main {
   }
 
   static userExists (username) {
-    return this._sql.users (username).length > 0;
+    return new Promise ((fulfill, reject) => {
+      this._sql.users (username).then ((res) => {
+        fulfill (res.length > 0);
+      }, reject);
+    });
   }
+
   static addUser (username) {
     return this._sql.postUser (username);
+  }
+
+  static getUserId (username) {
+    return new Promise ((fulfill, reject) => {
+      this._sql.getUserId (username).then ((obj)=>{
+        fulfill (obj [0].UserId);
+      }, reject);
+    });
   }
 }
 

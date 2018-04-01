@@ -4,6 +4,8 @@ class Sql {
   constructor (host, name, pw) {
     this._dets = {host, name, pw};
     this._connect ();
+
+    this._waiting = [ ];
   }
 
 
@@ -15,19 +17,24 @@ class Sql {
   }
 
   getQuestionsByUserId (userId) {
-    return this._query (`select QuestionId from
-        (select * from Question where UserId=${userId})
-        join Answer on QuestionId`).then (fulfill, reject);
+    console.log (userId);
+    return this._query (`select * from
+        (select * from Question where UserId=${userId}) as Questions
+        join Answer on Questions.QuestionId where Answer.QuestionId = Questions.QuestionId`);
   }
   getQuestion (questionId) {
-    return this._query (`select * from Question where QuestionId=${questionId}`);
+    return this._query (`select * from Question join User on User.UserId where QuestionId=${questionId}`);
   }
   getQuestionByText (questionText) {
-    return this._query (`select * from Question where QuestionText=${questionText}`);
+    return this._query (`select * from Question join User on User.UserId where QuestionText='${questionText}'`);
   }
 
   getAnswers (questionId) {
     return this._query (`select * from Answer where QuestionId=${questionId}`);
+  }
+
+  getUserId (username) {
+    return this._query (`select UserId from User where username='${username}'`);
   }
 
   users (username) {
@@ -36,27 +43,39 @@ class Sql {
 
 
   postQuestion (question, userId, category, date) {
-    return this._query (`insert into Question values (NULL, ${question}, ${userId}, ${category})`);
+    return this._query (`insert into Question values (NULL, '${question}', ${userId}, '${category}', '${date}')`);
   }
   postAnswer (answer, questionId, date) {
-    return this._query (`insert into Answer values (NULL, ${questionId}, ${answer})`);
+    return this._query (`insert into Answer values (NULL, ${questionId}, '${answer}', '${date}')`);
   }
-  postUser (username, userId) {
-    return this._query (`insert into User values (NULL, ${username})`);
+  postUser (username) {
+    return this._query (`insert into User values (NULL, '${username}')`);
   }
 
   _query (query) {
     return new Promise ((fulfill, reject) => {
-      this._con.query (query, (err, res) => {
-        if (err) reject (err);
-        else fulfill (res);
-      });
+      var run = () => {
+        this._con.query (query, (err, res) => {
+
+          if (err) reject (err);
+          else fulfill (res);
+        });
+      }
+
+      if (!this._con)
+        this._waitForConnection().then (run, reject);
+      else run();
+    });
+  }
+
+  _waitForConnection () {
+    return new Promise ((fulfill, reject) => {
+      this._waiting.push (fulfill);
     });
   }
 
   _connect () {
     return new Promise ((fulfill, reject) => {
-      console.log (this._dets.host, this._dets.name, this._dets.pw);
       var con = mysql.createConnection({
         host: this._dets.host,
         user: this._dets.name,
@@ -64,13 +83,14 @@ class Sql {
         database: "Cuasking"
       });
 
-      console.log ("Connecting\n");
-      
-      con.connect ().then ((err) => {
+      con.connect ((err) => {
         if (err) reject (err);
         else {
-          console.log ("Connected to ", con);
           this._con = con;
+
+          // fulfill waiting processes
+          for (var f of this._waiting) f();
+
           fulfill ();
         }
       });
