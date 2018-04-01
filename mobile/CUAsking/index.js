@@ -1,4 +1,4 @@
 import { AppRegistry } from 'react-native';
-import App from './App';
+import CUAsking from './App';
 
-AppRegistry.registerComponent('CUAsking', () => App);
+AppRegistry.registerComponent('CUAsking', () => CUAsking);

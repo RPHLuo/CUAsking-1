@@ -1,9 +1,3 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- * @flow
- */
-
 import React, { Component } from 'react';
 import {
   Platform,
@@ -11,48 +5,68 @@ import {
   Text,
   View
 } from 'react-native';
+import { TabNavigator, StackNavigator } from 'react-navigation';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import Home from './src/home/home';
+import Question from './src/question/question';
+import User from './src/user/user';
 
-const instructions = Platform.select({
-  ios: 'Press Cmd+R to reload,\n' +
-    'Cmd+D or shake for dev menu',
-  android: 'Double tap R on your keyboard to reload,\n' +
-    'Shake or press menu button for dev menu',
+const HomeStack = StackNavigator({
+  Home: { screen: Home },
+  Question: { screen: Question }
+},
+{
+    headerMode: 'none',
+    navigationOptions: {
+        headerVisible: false,
+    }
+})
+
+const UserStack = StackNavigator({
+  User: { screen: User }
+},
+{
+    headerMode: 'none',
+    navigationOptions: {
+        headerVisible: false,
+    }
+})
+
+const MainNavigator = TabNavigator({
+  Home: {
+    screen: HomeStack,
+  },
+  User: {
+    screen: UserStack,
+  }
+},
+{
+  navigationOptions: ({ navigation }) => ({
+    tabBarIcon: ({ focused, tintColor }) => {
+      const { routeName } = navigation.state;
+        let iconName;
+        if (routeName === 'Home') {
+          iconName = 'home';
+        } else if (routeName === 'User') {
+          iconName = 'user';
+        }
+        return <Icon name={iconName} size={ 25 } color={tintColor} />;
+    }
+  }),
+  tabBarPosition: 'bottom',
+  animationEnabled: true,
+  swipeEnabled: false,
+  tabBarOptions: {
+    showLabel: false,
+    showIcon: true,
+    activeTintColor: '#e91e63',
+  },
 });
 
-type Props = {};
-export default class App extends Component<Props> {
+export default class CUAsking extends React.Component {
   render() {
     return (
-      <View style={styles.container}>
-        <Text style={styles.welcome}>
-          Welcome to React Native!
-        </Text>
-        <Text style={styles.instructions}>
-          To get started, edit App.js
-        </Text>
-        <Text style={styles.instructions}>
-          {instructions}
-        </Text>
-      </View>
+      <MainNavigator/>
     );
   }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5FCFF',
-  },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
-  },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
-  },
-});
